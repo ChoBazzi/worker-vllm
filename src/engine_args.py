@@ -2,8 +2,7 @@ import os
 import json
 import logging
 from torch.cuda import device_count
-from vllm.engine.arg_utils import EngineArgs
-from vllm.model_executor.model_loader.tensorizer import TensorizerConfig
+from vllm.engine.arg_utils import AsyncEngineArgs
 from src.utils import convert_limit_mm_per_prompt
 
 RENAME_ARGS_MAP = {
@@ -93,7 +92,7 @@ def match_vllm_args(args):
     """Rename args to match vllm by:
     1. Renaming keys to lower case
     2. Renaming keys to match vllm
-    3. Filtering args to match vllm's EngineArgs
+    3. Filtering args to match vllm's AsyncEngineArgs
 
     Args:
         args (dict): Dictionary of args
@@ -102,7 +101,7 @@ def match_vllm_args(args):
         dict: Dictionary of args with renamed keys
     """
     renamed_args = {RENAME_ARGS_MAP.get(k, k): v for k, v in args.items()}
-    matched_args = {k: v for k, v in renamed_args.items() if k in EngineArgs.__dataclass_fields__}
+    matched_args = {k: v for k, v in renamed_args.items() if k in AsyncEngineArgs.__dataclass_fields__}
     return {k: v for k, v in matched_args.items() if v not in [None, "", "None"]}
 def get_local_args():
     """
@@ -129,7 +128,7 @@ def get_engine_args():
     # Start with default args
     args = DEFAULT_ARGS
     
-    # Get env args that match keys in EngineArgs
+    # Get env args that match keys in AsyncEngineArgs
     args.update(os.environ)
     
     # Get local args if model is baked in and overwrite env args
@@ -167,4 +166,4 @@ def get_engine_args():
     #     os.environ["VLLM_ATTENTION_BACKEND"] = "FLASHINFER"
     #     logging.info("Using FLASHINFER for gemma-2 model.")
         
-    return EngineArgs(**args)
+    return AsyncEngineArgs(**args)
