@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from torch.cuda import device_count
-from vllm import AsyncEngineArgs
+from vllm.engine.arg_utils import EngineArgs
 from vllm.model_executor.model_loader.tensorizer import TensorizerConfig
 from src.utils import convert_limit_mm_per_prompt
 
@@ -32,13 +32,10 @@ DEFAULT_ARGS = {
     "quantization_param_path": os.getenv('QUANTIZATION_PARAM_PATH', None),
     "seed": int(os.getenv('SEED', 0)),
     "max_model_len": int(os.getenv('MAX_MODEL_LEN', 0)) or None,
-    "worker_use_ray": os.getenv('WORKER_USE_RAY', 'False').lower() == 'true',
     "distributed_executor_backend": os.getenv('DISTRIBUTED_EXECUTOR_BACKEND', None),
     "max_parallel_loading_workers": int(os.getenv('MAX_PARALLEL_LOADING_WORKERS', 0)) or None,
     "block_size": int(os.getenv('BLOCK_SIZE', 16)),
-    "enable_prefix_caching": os.getenv('ENABLE_PREFIX_CACHING', 'False').lower() == 'true',
     "disable_sliding_window": os.getenv('DISABLE_SLIDING_WINDOW', 'False').lower() == 'true',
-    "use_v2_block_manager": os.getenv('USE_V2_BLOCK_MANAGER', 'False').lower() == 'true',
     "swap_space": int(os.getenv('SWAP_SPACE', 4)),  # GiB
     "cpu_offload_gb": int(os.getenv('CPU_OFFLOAD_GB', 0)),  # GiB
     "max_num_batched_tokens": int(os.getenv('MAX_NUM_BATCHED_TOKENS', 0)) or None,
@@ -69,14 +66,9 @@ DEFAULT_ARGS = {
     "lora_dtype": os.getenv('LORA_DTYPE', 'auto'),
     "max_cpu_loras": int(os.getenv('MAX_CPU_LORAS', 0)) or None,
     "device": os.getenv('DEVICE', 'auto'),
-    "ray_workers_use_nsight": os.getenv('RAY_WORKERS_USE_NSIGHT', 'False').lower() == 'true',
     "num_gpu_blocks_override": int(os.getenv('NUM_GPU_BLOCKS_OVERRIDE', 0)) or None,
-    "num_lookahead_slots": int(os.getenv('NUM_LOOKAHEAD_SLOTS', 0)),
     "model_loader_extra_config": os.getenv('MODEL_LOADER_EXTRA_CONFIG', None),
     "ignore_patterns": os.getenv('IGNORE_PATTERNS', None),
-    "preemption_mode": os.getenv('PREEMPTION_MODE', None),
-    "scheduler_delay_factor": float(os.getenv('SCHEDULER_DELAY_FACTOR', 0.0)),
-    "enable_chunked_prefill": os.getenv('ENABLE_CHUNKED_PREFILL', None),
     "guided_decoding_backend": os.getenv('GUIDED_DECODING_BACKEND', 'outlines'),
     "speculative_model": os.getenv('SPECULATIVE_MODEL', None),
     "speculative_draft_tensor_parallel_size": int(os.getenv('SPECULATIVE_DRAFT_TENSOR_PARALLEL_SIZE', 0)) or None,
@@ -92,7 +84,6 @@ DEFAULT_ARGS = {
     "qlora_adapter_name_or_path": os.getenv('QLORA_ADAPTER_NAME_OR_PATH', None),
     "disable_logprobs_during_spec_decoding": os.getenv('DISABLE_LOGPROBS_DURING_SPEC_DECODING', None),
     "otlp_traces_endpoint": os.getenv('OTLP_TRACES_ENDPOINT', None),
-    "use_v2_block_manager": os.getenv('USE_V2_BLOCK_MANAGER', 'true'),
 }
 limit_mm_env = os.getenv('LIMIT_MM_PER_PROMPT')
 if limit_mm_env is not None:
@@ -102,7 +93,7 @@ def match_vllm_args(args):
     """Rename args to match vllm by:
     1. Renaming keys to lower case
     2. Renaming keys to match vllm
-    3. Filtering args to match vllm's AsyncEngineArgs
+    3. Filtering args to match vllm's EngineArgs
 
     Args:
         args (dict): Dictionary of args
@@ -111,7 +102,7 @@ def match_vllm_args(args):
         dict: Dictionary of args with renamed keys
     """
     renamed_args = {RENAME_ARGS_MAP.get(k, k): v for k, v in args.items()}
-    matched_args = {k: v for k, v in renamed_args.items() if k in AsyncEngineArgs.__dataclass_fields__}
+    matched_args = {k: v for k, v in renamed_args.items() if k in EngineArgs.__dataclass_fields__}
     return {k: v for k, v in matched_args.items() if v not in [None, "", "None"]}
 def get_local_args():
     """
@@ -138,7 +129,7 @@ def get_engine_args():
     # Start with default args
     args = DEFAULT_ARGS
     
-    # Get env args that match keys in AsyncEngineArgs
+    # Get env args that match keys in EngineArgs
     args.update(os.environ)
     
     # Get local args if model is baked in and overwrite env args
@@ -176,4 +167,4 @@ def get_engine_args():
     #     os.environ["VLLM_ATTENTION_BACKEND"] = "FLASHINFER"
     #     logging.info("Using FLASHINFER for gemma-2 model.")
         
-    return AsyncEngineArgs(**args)
+    return EngineArgs(**args)

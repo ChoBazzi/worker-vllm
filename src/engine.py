@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from typing import AsyncGenerator, Optional
 import time
 
-from vllm import AsyncLLMEngine
+from vllm import AsyncLLM
 from vllm.entrypoints.logger import RequestLogger
 from vllm.entrypoints.openai.serving_chat import OpenAIServingChat
 from vllm.entrypoints.openai.serving_completion import OpenAIServingCompletion
@@ -162,7 +162,7 @@ class vLLMEngine:
     def _initialize_llm(self):
         try:
             start = time.time()
-            engine = AsyncLLMEngine.from_engine_args(self.engine_args)
+            engine = AsyncLLM.from_engine_args(self.engine_args)
             end = time.time()
             logging.info(f"Initialized vLLM engine in {end - start:.2f}s")
             return engine
@@ -202,7 +202,7 @@ class OpenAIvLLMEngine(vLLMEngine):
         return adapters
 
     async def _initialize_engines(self):
-        self.model_config = await self.llm.get_model_config()
+        self.model_config = self.llm.model_config
         self.base_model_paths = [
             BaseModelPath(name=self.engine_args.model, model_path=self.engine_args.model)
         ]
