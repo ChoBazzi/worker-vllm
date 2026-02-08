@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from typing import AsyncGenerator, Optional
 import time
 
-from vllm import AsyncLLM
+from vllm.v1.engine.async_llm import AsyncLLM
 from vllm.entrypoints.logger import RequestLogger
 from vllm.entrypoints.openai.serving_chat import OpenAIServingChat
 from vllm.entrypoints.openai.serving_completion import OpenAIServingCompletion
